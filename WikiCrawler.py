@@ -477,8 +477,14 @@ class WikiCrawler:
         """
         Read articles saved in path.
         """
+        index_path = f"{self.archive_path}/index.txt"
+        if not os.path.exists(index_path):
+            with open(index_path, "w") as fp:
+                pass
+            return []
+
         links = []
-        with open(f"{self.archive_path}/index.txt", "r") as fp:
+        with open(index_path, "r") as fp:
             for line in fp:
                 _, link = line.strip().split('=')
                 links.append(link)
@@ -557,7 +563,7 @@ class WikiCrawler:
                     print(text_line, file=fp)
 
             with open(f"{self.archive_path}/index.txt", "a") as fp:
-                print(f'{identifyer}={article_link}')
+                print(f'{identifyer}={article_link}',file=fp)
 
     def printCategoryHierachy(self, node: str, max_level: int = 1) -> None:
         """

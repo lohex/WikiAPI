@@ -1,6 +1,0 @@
-setup.py
-WikiApi.egg-info/PKG-INFO
-WikiApi.egg-info/SOURCES.txt
-WikiApi.egg-info/dependency_links.txt
-WikiApi.egg-info/requires.txt
-WikiApi.egg-info/top_level.txt

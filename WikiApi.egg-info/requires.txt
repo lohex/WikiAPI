@@ -1,5 +1,0 @@
-beautifulsoup4==4.12.2
-dill==0.3.7
-ipython==8.14.0
-PyYAML==6.0.1
-Requests==2.31.0

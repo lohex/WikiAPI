@@ -82,7 +82,8 @@ class WikiCrawler:
             "skip_article_rules",
             "skip_article_categories",
             "skip_article_category_rules",
-            "skipped_articles"
+            "skipped_articles",
+            "broken_links"
             ]
         for var in dict_list[1:]:
             setattr(self, var, {})
@@ -424,6 +425,7 @@ class WikiCrawler:
         """
         if self.archive_path is not None:
             artilces_loaded = self.readIndex()
+            print(f'Found {len(artilces_loaded)} articles in archive.')
         else:
             artilces_loaded = self.article_texts.keys()
 
@@ -444,7 +446,7 @@ class WikiCrawler:
                 page = WikiArticle(name, article_link)
             except Exception as e:
                 self.print(f"Article {name} was not found at {article_link}!")
-                self.broken_links.append(f"Link broken: {article_link}:" + e)
+                self.broken_links[article_link] = e
                 article_is_valid = False
 
             article_categories = page.getHeadCategories()
@@ -563,7 +565,7 @@ class WikiCrawler:
                     print(text_line, file=fp)
 
             with open(f"{self.archive_path}/index.txt", "a") as fp:
-                print(f'{identifyer}={article_link}',file=fp)
+                print(f'{identifyer}={article_link}', file=fp)
 
     def printCategoryHierachy(self, node: str, max_level: int = 1) -> None:
         """

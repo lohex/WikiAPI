@@ -10,8 +10,8 @@ Author: Lorenz Hexemer
 import re
 import requests
 from bs4 import BeautifulSoup, Comment
-from collections import defaultdict
 from typing import Dict
+
 
 class WikiArticle:
     BASE_URL = "https://en.wikipedia.org"
@@ -50,7 +50,10 @@ class WikiArticle:
         link_area = self.doc.find('div', id="mw-normal-catlinks")
         if link_area:
             head_category_links = link_area.ul.find_all('a')
-            head_categories = {s.attrs['href']: s.attrs['title'] for s in head_category_links}
+            head_categories = {
+                s.attrs['href']: s.attrs['title']
+                for s in head_category_links
+                }
             return head_categories
         return {}
 

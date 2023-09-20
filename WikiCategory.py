@@ -10,7 +10,8 @@ Author: Lorenz Hexemer
 import re
 import requests
 from bs4 import BeautifulSoup
-from typing import Dict, Union, List
+from typing import Dict, List
+
 
 class WikiCategory:
     """
@@ -22,12 +23,13 @@ class WikiCategory:
         exists (bool) Boolsch flag if the category was found.
         doc (BeautifulSoup): Parsed HTML document of the category page.
         sub_categories (dict): Dictionary of subcategories' links and titles.
-        head_categories (dict): Dictionary of head categories' links and titles.
+        head_categories (dict): Dictionary containing  upstream
+          categories' links and titles.
         pages (dict): Dictionary of page links and titles.
 
     Methods:
         __init__(self, name, link=None, load=True):
-            Initializes a WikiCategory instance.            
+            Initializes a WikiCategory instance.
 
         getSubCategories(self) -> dict:
             Retrieves subcategories of the category.
@@ -48,11 +50,17 @@ class WikiCategory:
 
         Args:
             name (str): The name of the category.
-            link (str, optional): The link to the category page on Wikipedia. Defaults to None.
-            load (bool, optional): Whether to load the category page. Defaults to True.
+            link (str, optional): The link to the category page on Wikipedia.
+              Defaults to None.
+            load (bool, optional): Whether to load the category page.
+              Defaults to True.
         """
-        self.name = name if re.match('^Category:.*', name) else 'Category:' + name
-        self.link = link or self.CATEGORY_URL_PREFIX + self.name.replace(' ', "_")
+        if not re.match('^Category:.*', name):
+            name = f'Category:{name}'
+        self.name = name
+        if link is None:
+            link = self.CATEGORY_URL_PREFIX + self.name.replace(' ', "_")
+        self.link = link
         self.doc = None
         if load:
             self._requestCategory()
@@ -71,7 +79,8 @@ class WikiCategory:
         """
         new_category = cls('temp_name', link, load)
         if load:
-            new_category.name = new_category.doc.find('h1', class_='firstHeading').text
+            new_category.name = new_category.doc.find(
+                'h1', class_='firstHeading').text
         return new_category
 
     @classmethod
@@ -82,7 +91,7 @@ class WikiCategory:
         Args:
             name (str): The name of the category.
             load (bool): Whether to immediately load category data.
-        
+
         Returns:
             The created WikiCategory instance.
         """
@@ -97,7 +106,7 @@ class WikiCategory:
 
         Args:
             url (str): The URL to request.
-        
+
         Returns:
             The HTTP response.
         """
@@ -132,8 +141,11 @@ class WikiCategory:
         sub_category_links = self.doc.find('div', id="mw-subcategories")
         if sub_category_links is None:
             return {}
-        
-        sub_categories = {s.attrs['href']: s.attrs['title'] for s in sub_category_links.find_all('a')}
+
+        sub_categories = {
+            s.attrs['href']: s.attrs['title']
+            for s in sub_category_links.find_all('a')
+        }
         return sub_categories
 
     def getHeadCategories(self) -> Dict[str, str]:
@@ -143,8 +155,14 @@ class WikiCategory:
         Returns:
             dict: Dictionary containing head category links and titles.
         """
-        head_category_links = self.doc.find('div', id="mw-normal-catlinks").ul.find_all('a')
-        head_categories = {s.attrs['href']: s.attrs['title'] for s in head_category_links}
+        head_category_links = self.doc.find(
+            'div',
+            id="mw-normal-catlinks"
+        ).ul.find_all('a')
+        head_categories = {
+            s.attrs['href']: s.attrs['title']
+            for s in head_category_links
+        }
         return head_categories
 
     def getPages(self) -> Dict[str, str]:
@@ -161,7 +179,7 @@ class WikiCategory:
             self.doc = BeautifulSoup(response.text, 'html.parser')
             next_link = self._loadPageLinks()
         return self.pages
-            
+
     def _loadPageLinks(self) -> List[str]:
         """
         Loads page links from paginated view.
@@ -173,10 +191,14 @@ class WikiCategory:
         if mw_pages is None:
             return []
 
-        self.pages.update({p.a.attrs['href']: p.a.attrs['title'] for p in mw_pages.find_all("li")})
+        self.pages.update({
+            p.a.attrs['href']: p.a.attrs['title']
+            for p in mw_pages.find_all("li")
+        })
         next_page_links = mw_pages.find_all("a")
-        next_link = [a.attrs['href'] for a in next_page_links if 'next page' in a.text]
+        next_link = [
+            a.attrs['href']
+            for a in next_page_links
+            if 'next page' in a.text
+        ]
         return next_link
-    
-
-    

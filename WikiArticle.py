@@ -27,7 +27,9 @@ class WikiArticle:
             load (bool  ): Whether to immediately load article data.
         """
         self.name = name
-        self.link = link or self.ARTICLE_URL_PREFIX + self.name.replace(' ', "_")
+        if link is None:
+            link = self.ARTICLE_URL_PREFIX + self.name.replace(' ', "_")
+        self.link = link
         self.doc = None
         if load:
             self._load()
@@ -53,7 +55,7 @@ class WikiArticle:
             head_categories = {
                 s.attrs['href']: s.attrs['title']
                 for s in head_category_links
-                }
+            }
             return head_categories
         return {}
 
@@ -65,9 +67,14 @@ class WikiArticle:
             A dictionary of links URLs and titles.
         """
         all_a = self.doc.find("div", class_="mw-parser-output").find_all('a')
-        links = {a.attrs['href']: a.attrs['title'] for a in all_a if 'href' in a.attrs and re.match("^/wiki/[^:]+$", a.attrs['href'])}
+        links = {
+            a.attrs['href']: a.attrs['title']
+            for a in all_a
+            if 'href' in a.attrs
+            and re.match("^/wiki/[^:]+$", a.attrs['href'])
+        }
         return links
-           
+
     def getText(self) -> str:
         """
         Retrieves the text content of the article.
@@ -89,41 +96,44 @@ class WikiArticle:
                     sibling.extract()
                 closing_h2.extract()
 
-        for table in content.find_all(['table','style','script','figure']):
+        for table in content.find_all(['table', 'style', 'script', 'figure']):
             if table.name == 'figure':
                 capt_text = table.text.strip()
                 if len(capt_text) > 0:
                     table.replace_with("<CAP> " + capt_text + "\n")
             else:
                 table.decompose()
-        for div in content.find_all('div',class_="shortdescription"):
+        for div in content.find_all('div', class_="shortdescription"):
             div.replace_with("<DES> " + div.text + "\n")
-        for img in content.find_all('div',class_="thumbcaption"):
-            img.replace_with("<CAP> " + img.text + "\n")        
-        for img in content.find_all('div',class_="thumbimage"):
+        for img in content.find_all('div', class_="thumbcaption"):
+            img.replace_with("<CAP> " + img.text + "\n")
+        for img in content.find_all('div', class_="thumbimage"):
             img.decompose()
-        for math in content.find_all('span',class_="mwe-math-element"):
+        for math in content.find_all('span', class_="mwe-math-element"):
             math.replace_with("[[MATH_EXPRESSION]]")
-        for edits in content.find_all('span',class_="mw-editsection"):
+        for edits in content.find_all('span', class_="mw-editsection"):
             edits.decompose()
         for refs in content.find_all('sup', class_="reference"):
             refs.decompose()
         for refs in content.find_all('div', role="note"):
             refs.decompose()
-        for h_tag in content.find_all(['h2','h3','h4','h5']):
-            tag_type = h_tag.name.upper().replace('H','HL')
+        for h_tag in content.find_all(['h2', 'h3', 'h4', 'h5']):
+            tag_type = h_tag.name.upper().replace('H', 'HL')
             h_tag.replace_with(f"<{tag_type}> " + h_tag.text + "\n")
-        for refs in content.find_all(['li','dd','dt']):
+        for refs in content.find_all(['li', 'dd', 'dt']):
             refs.replace_with("<LST> " + refs.text + "\n")
         for refs in content.find_all('p'):
             refs.replace_with("<PAR> " + refs.text + "\n")
-        for comment in content.find_all(string=lambda text: isinstance(text, Comment)):
+        comments = content.find_all(
+            string=lambda text: isinstance(text, Comment)
+        )
+        for comment in comments:
             comment.extract()
 
         text = f'<HL1> {title}\n' + content.text
-        text = text.replace('[[MATH_EXPRESSION]]','<MATH>')
-        text = re.sub("\<[A-Z]{3}>: \n","",text)
-        text = re.sub("\s+\n","\n",text)
-        text = re.sub("\n+","\n",text)
-        text = re.sub("\r?\n([^<])"," $1",text)
+        text = text.replace('[[MATH_EXPRESSION]]', '<MATH>')
+        text = re.sub("<[A-Z]{3}>: \n", "", text)
+        text = re.sub(r"\s+\n", "\n", text)
+        text = re.sub("\n+", "\n", text)
+        text = re.sub("\r?\n([^<])", " $1", text)
         return [line for line in text.split('\n') if len(line) > 0]
